@@ -1,6 +1,8 @@
 
 # WebCounter
 
+(This is a demo project showing how to use ansible with a Node.js Project, featured on the Node.js Warsaw meetup group: https://www.meetup.com/node-js-warsaw/ )
+
 To use this project you need to install the following on your computer (Tested on Ubuntu/Debian Linux):
 
 * redis
