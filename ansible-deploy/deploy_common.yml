@@ -1,0 +1,92 @@
+# deploy_common.yml
+
+# ***** Update Computer *****
+
+- name: Update all apt packages to the latest version
+  apt:
+    upgrade: dist
+    update_cache: yes
+  notify: Reboot
+
+- name: Install rsyslog
+  apt:
+    name: rsyslog
+    state: present
+  notify: Reboot
+
+
+# ***** Setup Security *****
+
+- name: Install fail2ban (auto ban brute force attacks on SSH)
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Disallow SSH password authentication (Require public key to access machine)
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+  notify: Restart ssh
+
+- name: Ensure bash-completion
+  apt:
+    name: bash-completion
+    state: present
+
+- name: Ensure ufw
+  apt:
+    name: ufw
+    state: present
+
+- name: (DEBIAN) Allow all access to tcp http port 80
+  ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Open port 22 (ssh)
+  ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Set firewall default policy
+  ufw:
+    state: enabled
+    policy: reject
+  become: true
+
+
+
+# ***** Configure computer for serving Node.js *****
+
+- name: Install nodejs
+  apt:
+    name: nodejs
+    state: latest
+
+- name: Install npm
+  apt:
+    name: npm
+    state: latest
+
+- name: Install libcap2-bin
+  apt:
+    name: libcap2-bin
+    state: present
+
+- name: Set cap_net_bind_service+ep on /usr/bin/node to allow node to directly open port 80, 443 in user mode
+  capabilities:
+    path: /usr/bin/node
+    capability: cap_net_bind_service+ep
+    state: present
+
+
+# ***** Add Deploy User *****
+- name: Add the user 'deploy' with a bash shell
+  user:
+    name: deploy
+    shell: /bin/bash
+

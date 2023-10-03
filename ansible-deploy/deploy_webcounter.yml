@@ -1,0 +1,65 @@
+---
+- hosts: webcounter_server
+  remote_user: root
+
+  tasks:
+    - include_tasks: deploy_common.yml
+
+    # ***** install webcounter prerequisites *****
+    - name: Install Redis
+      apt:
+        name: redis
+        state: present
+
+
+    # ***** build program *****
+    - name: Compile TypeScript locally
+      command: tsc
+      args:
+        chdir: ../
+      delegate_to: localhost
+
+    # ***** transfer program from ansible computer to server *****
+    - name: Copy main.js to /home/deploy/main.js
+      copy:
+        src: ../build/main.js
+        dest: /home/deploy/main.js
+      notify: Restart webcounter
+
+    - name: Copy package.json to /home/deploy/package.json
+      copy:
+        src: ../package.json
+        dest: /home/deploy/package.json
+      notify: Restart webcounter
+
+    - name: npm install all webcounter dependencies
+      become: yes
+      become_user: deploy
+      npm:
+        path: /home/deploy
+        state: latest
+      notify: Restart webcounter
+
+    # ***** make webcounter a service that runs all the time *****
+    - name: install webcounter systemd unit file
+      template: src=webcounter.service.j2 dest=/etc/systemd/system/webcounter.service
+      notify: Restart webcounter
+
+    - name: Enable service webcounter
+      service:
+        name: webcounter
+        enabled: yes
+      notify: Restart webcounter
+
+  #- name: Unconditionally reboot the machine
+  #  reboot:
+
+  handlers:
+    - name: Restart ssh
+      service: name=ssh state=restarted
+
+    - name: Restart webcounter
+      service: name=webcounter state=restarted
+
+    - name: Reboot
+      reboot:

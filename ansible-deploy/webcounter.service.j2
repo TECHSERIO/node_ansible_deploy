@@ -1,0 +1,15 @@
+[Unit]
+Description=The AWESOME Counter
+Documentation=https://github.com/TECHSERIO/node_ansible_deploy
+After=network.target
+
+[Service]
+Environment=NODE_ENV=production
+
+Type=simple
+User=deploy
+ExecStart=/usr/bin/node /home/deploy/main.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
